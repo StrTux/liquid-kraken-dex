@@ -19,5 +19,5 @@
 
 ```bash
 git clone https://github.com/<your-username>/dex-kraken-core.git
-cd dex-kraken-core
+cd liquid-kraken-dex
 npm install
