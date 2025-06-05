@@ -18,6 +18,6 @@
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/dex-kraken-core.git
+git clone https://github.com/StrTux/liquid-kraken-dex.git
 cd liquid-kraken-dex
 npm install
