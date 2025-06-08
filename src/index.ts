@@ -3,8 +3,8 @@ import express, { Handler } from 'express';
 const app = express();
 app.use(express.json());
 
-let ETH_BALANCE = 200;
-let USDC_BALANCE = 70000;
+let ETH_BALANCE = 150;
+let USDC_BALANCE = 1000;
 
 interface TradeRequest {
   quantity: number;
@@ -13,26 +13,28 @@ interface TradeRequest {
 const buyAsset: Handler = (req, res) => {
   const { quantity } = req.body as TradeRequest;
 
-  const pricePerETH = USDC_BALANCE / ETH_BALANCE;
-  // yaha pe  hua ye ki  usdc = 70000 / 200 eth  se aata  hay  350
-  const paidAmount = quantity * pricePerETH;
-  // yaha  oe aata hay  // paidAmount = 350 - price per  eth  * 2 - quanity  = 700  
-  //  ye lene ke baad 200 -2 eth  from balance = 198 eth  balance  ho jayega
-  // or 70000 + 700 = 70700 usdc balance ho jayega
-
-
   if (quantity > ETH_BALANCE) {
     return res.status(400).json({
       error: 'Not enough ETH in liquidity pool',
     });
   }
 
-  ETH_BALANCE -= quantity;
-  USDC_BALANCE += paidAmount;
-  // fir yaha  ab  eth 198 hua  and balance  70700 usdc ho jayega
-  // 70700 / 198 = 356.56 price per eth ho jayega 
+  // yaha pe x * y = k use kar rahe hai 
+  // x = eth_balance, y = usdc_balance, to k = x * y
+  const k = ETH_BALANCE * USDC_BALANCE;
 
+  const new_ETH_BALANCE = ETH_BALANCE - quantity;
+  const new_USDC_BALANCE = k / new_ETH_BALANCE;
 
+  const paidAmount = new_USDC_BALANCE - USDC_BALANCE;
+
+  // fir ab hum balances update kar rahe hai
+  ETH_BALANCE = new_ETH_BALANCE;
+  USDC_BALANCE = new_USDC_BALANCE;
+
+  // yaha pe price change ho chuki hai due to amm model
+  // price per eth = new_USDC_BALANCE / new_ETH_BALANCE
+  const pricePerETH = USDC_BALANCE / ETH_BALANCE;
 
   return res.json({
     message: `You bought ${quantity} ETH for ${paidAmount.toFixed(2)} USDC`,
@@ -44,10 +46,13 @@ const buyAsset: Handler = (req, res) => {
 const sellAsset: Handler = (req, res) => {
   const { quantity } = req.body as TradeRequest;
 
-  const pricePerETH = USDC_BALANCE / ETH_BALANCE;
-    // yaha pe  hua ye ki  usdc = 70700 / 198 eth  se aata  hay  356.56
-  const receivedAmount = quantity * pricePerETH;
-    // yaha  oe aata hay  // receivedAmount = 356.56 - price per  eth  * 2 - quanity  = 713.12
+  // x * y = k, x = eth, y = usdc
+  const k = ETH_BALANCE * USDC_BALANCE;
+
+  const new_ETH_BALANCE = ETH_BALANCE + quantity;
+  const new_USDC_BALANCE = k / new_ETH_BALANCE;
+
+  const receivedAmount = USDC_BALANCE - new_USDC_BALANCE;
 
   if (receivedAmount > USDC_BALANCE) {
     return res.status(400).json({
@@ -55,10 +60,12 @@ const sellAsset: Handler = (req, res) => {
     });
   }
 
-  ETH_BALANCE += quantity;
-  USDC_BALANCE -= receivedAmount;
-    // fir yaha  ab  eth 200 hua  and balance  69986.88 usdc ho jayega
-    // 69986.88 / 200 = 349.93 price per eth ho jayega
+  // fir yaha balances update kar rahe hai
+  ETH_BALANCE = new_ETH_BALANCE;
+  USDC_BALANCE = new_USDC_BALANCE;
+
+  // naya price per eth = usdc / eth
+  const pricePerETH = USDC_BALANCE / ETH_BALANCE;
 
   return res.json({
     message: `You sold ${quantity} ETH and received ${receivedAmount.toFixed(2)} USDC`,
